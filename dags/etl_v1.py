@@ -1,131 +1,103 @@
-## import modules
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from datetime import datetime
-from sqlalchemy import create_engine
-
-import pandas as pd
-import json
-import requests
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime, timedelta
 import psycopg2
-import airflow
+from psycopg2.extras import execute_values
 
+# Default arguments for the DAG
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 8, 5),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
 
-# define database cedentials for database connection
-HOST_NAME = 'intern_de-postgres-1'
-DATABASE = 'airflow'
-USER_NAME = 'airflow'
-PASSWORD = 'airflow'
-PORT_ID = 5432
-
-# define url for calling data from government data site
-raw_url = 'https://recalls-rappels.canada.ca/sites/default/files/opendata-donneesouvertes/HCRSAMOpenData.json'
-
-# data path to save raw data and cleaned data
-raw_data_path = '/opt/airflow/data/raw/recalls_raw.csv'
-cleaned_data_path = '/opt/airflow/data/cleaned/recalls_cleaned.csv'
-
-# define a dag variable based on the Airflow DAG object
+# Define the DAG
 dag = DAG(
-    dag_id='invoice_etl_v1',
-    start_date=datetime(2024,8,5),
-    schedule_interval= '@daily',
-    catchup = False
+    'etl_pipeline',
+    default_args=default_args,
+    description='A simple ETL pipeline',
+    schedule_interval=timedelta(days=1),
 )
 
-# define the extraction function that takes API url
-# and save the raw data as a csv
-def get_recall_data(url, raw_output_path):
-    response = requests.get(url)
-    response_data = response.json()
-    print(response)
+# Function to perform the ETL
+def etl():
+    # Database connection details
+    SOURCE_HOST = 'intern_de-postgres-1'  # Assuming your Docker container is on localhost
+    SOURCE_DATABASE = 'airflow'  # Replace with your source database name
+    SOURCE_USER = 'airflow'  # Replace with your source username
+    SOURCE_PASSWORD = 'airflow'  # Replace with your source password
+    SOURCE_PORT = 5432  # Replace with your source port if different
 
-    recall_list = []
+    TARGET_HOST = 'intern_de-postgres-1'
+    TARGET_DATABASE = 'airflow'
+    TARGET_USER = 'airflow'
+    TARGET_PASSWORD = 'airflow'
+    TARGET_PORT = 5432
 
-    for r in response_data:
-        recall = {
-            'recall_id': r['NID'],
-            # 'title': r['Title'],
-            'organization': r['Organization'],
-            'product_name': r['Product'],
-            'issue': r['Issue'],
-            'category': r['Category'],
-            'updated_at': r['Last updated']
-        }
-        recall_list.append(recall)
+    # Connect to the source database
+    source_conn = psycopg2.connect(
+        host=SOURCE_HOST,
+        database=SOURCE_DATABASE,
+        user=SOURCE_USER,
+        password=SOURCE_PASSWORD,
+        port=SOURCE_PORT
+    )
 
-    print(f"Added {len(recall_list)} recalled records.")
+    # Connect to the target database
+    target_conn = psycopg2.connect(
+        host=TARGET_HOST,
+        database=TARGET_DATABASE,
+        user=TARGET_USER,
+        password=TARGET_PASSWORD,
+        port=TARGET_PORT
+    )
 
-    recall_df = pd.DataFrame(recall_list)
+    source_cursor = source_conn.cursor()
+    target_cursor = target_conn.cursor()
 
-    current_timestamp = datetime.now()
+    # Fetch data from the source view
+    source_cursor.execute("SELECT id, based_date, amount, quantity FROM vw_agg_invoice")
+    data = source_cursor.fetchall()
 
-    recall_df['data_received_at'] = current_timestamp
+    # Create the target table if it doesn't exist
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS agg_invoice (
+        id BIGINT PRIMARY KEY,
+        based_date DATE,
+        amount BIGINT,
+        quantity BIGINT
+    )
+    """
+    target_cursor.execute(create_table_query)
 
-    recall_df.to_csv(raw_output_path, index=False)
+    # Insert data into the target table
+    insert_query = """
+    INSERT INTO agg_invoice (id, based_date, amount, quantity)
+    VALUES %s
+    ON CONFLICT (id) DO NOTHING
+    """
 
-# define a transformation function and save the cleaned data into another csv
-def clean_recall_data(raw_input_path, cleaned_output_path):
-    df = pd.read_csv(raw_input_path)
+    execute_values(target_cursor, insert_query, data)
 
-    df[['issue_category', 'category']] = df['category'].str.split(' - ', n=1, expand=True)
-    df['updated_at'] = pd.to_datetime(df['updated_at'], format='%Y-%m-%d')
+    # Commit the transaction
+    target_conn.commit()
 
-    df = df.sort_values(by=['updated_at'], ascending=False)
-    df.to_csv(cleaned_output_path, index=False)
+    # Close the connections
+    source_cursor.close()
+    source_conn.close()
+    target_cursor.close()
+    target_conn.close()
 
-    print(f"Success: cleaned {len(df)} recall records.")
+    print("ETL process completed successfully!")
 
-# define a function to load the data to postgresql database
-# and use pd.sql() to load the transformed data to the database directly
-def load_to_db(db_host, db_name, db_user, db_pswd, db_port, data_path):
-    df = pd.read_csv(data_path)
-    current_timestamp = datetime.now()
-    df['data_ingested_at'] = current_timestamp
-
-    # load csv data to the database
-    engine = create_engine(f"postgresql+psycopg2://{db_user}:{db_pswd}@{db_host}/{db_name}")
-    df.to_sql('recalls', con=engine, schema='data', if_exists='replace', index=False)
-
-    print(f"Success: Loaded {len(df)} recall records to {db_name}.")
-
-
-# define task using Airflow PythonOperator for raw data extraction
-get_raw_data = PythonOperator(
-    task_id='get_raw_data',
-    python_callable=get_recall_data,
-    op_kwargs={
-        'url': raw_url,
-        'raw_output_path': raw_data_path
-    },
+# Define the PythonOperator task
+etl_task = PythonOperator(
+    task_id='etl_task',
+    python_callable=etl,
     dag=dag,
 )
 
-#define tasks to transform raw data
-clean_raw_data = PythonOperator(
-    task_id='clean_raw_data',
-    python_callable=clean_recall_data,
-    op_kwargs={
-        'raw_input_path': raw_data_path,
-        'cleaned_output_path': cleaned_data_path
-    },
-    dag=dag,
-)
-
-# define task using Airflow PythonOperator to load cleaned data to PostgreSQL database
-load_data_to_db = PythonOperator(
-    task_id='load_data_to_db',
-    python_callable=load_to_db,
-    op_kwargs={
-        'db_host': HOST_NAME,
-        'db_name': DATABASE,
-        'db_user': USER_NAME,
-        'db_pswd': PASSWORD,
-        'db_port': PORT_ID,
-        'data_path': cleaned_data_path
-    },
-    dag=dag,
-)
-
-# set the order to execute each of the tasks in the DAG
-get_raw_data >> clean_raw_data >> load_data_to_db
+# Set the task dependencies
+etl_task
