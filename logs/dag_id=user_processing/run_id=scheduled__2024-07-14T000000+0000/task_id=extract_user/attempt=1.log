@@ -1,0 +1,25 @@
+[2024-07-17T03:44:54.082+0000] {taskinstance.py:1083} INFO - Dependencies all met for <TaskInstance: user_processing.extract_user scheduled__2024-07-14T00:00:00+00:00 [queued]>
+[2024-07-17T03:44:54.096+0000] {taskinstance.py:1083} INFO - Dependencies all met for <TaskInstance: user_processing.extract_user scheduled__2024-07-14T00:00:00+00:00 [queued]>
+[2024-07-17T03:44:54.097+0000] {taskinstance.py:1279} INFO - 
+--------------------------------------------------------------------------------
+[2024-07-17T03:44:54.098+0000] {taskinstance.py:1280} INFO - Starting attempt 1 of 1
+[2024-07-17T03:44:54.098+0000] {taskinstance.py:1281} INFO - 
+--------------------------------------------------------------------------------
+[2024-07-17T03:44:54.116+0000] {taskinstance.py:1300} INFO - Executing <Task(SimpleHttpOperator): extract_user> on 2024-07-14 00:00:00+00:00
+[2024-07-17T03:44:54.123+0000] {standard_task_runner.py:55} INFO - Started process 116 to run task
+[2024-07-17T03:44:54.126+0000] {standard_task_runner.py:82} INFO - Running: ['***', 'tasks', 'run', 'user_processing', 'extract_user', 'scheduled__2024-07-14T00:00:00+00:00', '--job-id', '86', '--raw', '--subdir', 'DAGS_FOLDER/user_processing.py', '--cfg-path', '/tmp/tmp1r25qz2f']
+[2024-07-17T03:44:54.126+0000] {standard_task_runner.py:83} INFO - Job 86: Subtask extract_user
+[2024-07-17T03:44:54.201+0000] {task_command.py:388} INFO - Running <TaskInstance: user_processing.extract_user scheduled__2024-07-14T00:00:00+00:00 [running]> on host 5bbd737422cd
+[2024-07-17T03:44:54.284+0000] {taskinstance.py:1509} INFO - Exporting the following env vars:
+AIRFLOW_CTX_DAG_OWNER=***
+AIRFLOW_CTX_DAG_ID=user_processing
+AIRFLOW_CTX_TASK_ID=extract_user
+AIRFLOW_CTX_EXECUTION_DATE=2024-07-14T00:00:00+00:00
+AIRFLOW_CTX_TRY_NUMBER=1
+AIRFLOW_CTX_DAG_RUN_ID=scheduled__2024-07-14T00:00:00+00:00
+[2024-07-17T03:44:54.286+0000] {http.py:123} INFO - Calling HTTP method
+[2024-07-17T03:44:54.296+0000] {base.py:73} INFO - Using connection ID 'user_api' for task execution.
+[2024-07-17T03:44:54.845+0000] {http.py:127} INFO - {"results":[{"gender":"female","name":{"title":"Ms","first":"Judith","last":"Ortiz"},"location":{"street":{"number":2162,"name":"Bollinger Rd"},"city":"Boston","state":"Tennessee","country":"United States","postcode":80062,"coordinates":{"latitude":"87.1266","longitude":"77.8572"},"timezone":{"offset":"-10:00","description":"Hawaii"}},"email":"judith.ortiz@example.com","login":{"uuid":"7ac1301d-c31e-408d-a6ad-25ff051c4415","username":"ticklishdog435","password":"painter","salt":"lg6bFY6y","md5":"84a3634200746c1f274ec842398fd6db","sha1":"a5547cec8fe34534822204b5283bb98b0efe17e8","sha256":"7f8aeb886b2034f8b338b38b65d670acf581e76e8fe1b52f0ef9e357e6b38231"},"dob":{"date":"2001-05-28T13:47:15.597Z","age":23},"registered":{"date":"2021-09-23T22:27:07.709Z","age":2},"phone":"(417) 421-3322","cell":"(848) 664-4183","id":{"name":"SSN","value":"385-98-9228"},"picture":{"large":"https://randomuser.me/api/portraits/women/1.jpg","medium":"https://randomuser.me/api/portraits/med/women/1.jpg","thumbnail":"https://randomuser.me/api/portraits/thumb/women/1.jpg"},"nat":"US"}],"info":{"seed":"873543088fadda20","results":1,"page":1,"version":"1.4"}}
+[2024-07-17T03:44:54.884+0000] {taskinstance.py:1323} INFO - Marking task as SUCCESS. dag_id=user_processing, task_id=extract_user, execution_date=20240714T000000, start_date=20240717T034454, end_date=20240717T034454
+[2024-07-17T03:44:54.987+0000] {local_task_job.py:208} INFO - Task exited with return code 0
+[2024-07-17T03:44:55.035+0000] {taskinstance.py:2578} INFO - 1 downstream tasks scheduled from follow-on schedule check
