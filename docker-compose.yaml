@@ -73,7 +73,7 @@ x-airflow-common:
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
   volumes:
-    - D:/intern_de/csv:/opt/airflow/csv  # Add this line to mount your local CSV folder
+    # - D:/intern_de/csv:/opt/airflow/csv  # Add this line to mount your local CSV folder
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
@@ -248,7 +248,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - D:/intern_de/csv:/opt/airflow/csv  # Add this line to mount your local CSV folder
+      # - D:/intern_de/csv:/opt/airflow/csv  # Add this line to mount your local CSV folder
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
   airflow-cli:

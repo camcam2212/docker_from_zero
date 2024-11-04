@@ -7,15 +7,14 @@ from psycopg2.extras import execute_values
 # Default arguments for the DAG
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': False,
     'start_date': datetime(2024, 8, 5),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retries': 1, #The number of retries if a task fails
+    'retry_delay': timedelta(minutes=5), #The delay between retries
 }
 
 # Define the DAG
 dag = DAG(
-    'etl_pipeline',
+    'etl_postgresql',
     default_args=default_args,
     description='A simple ETL pipeline',
     schedule_interval=timedelta(days=1),
